@@ -5,15 +5,37 @@ const tasks = [
 const taskList = document.querySelector("#task-list");
 const todoForm = document.querySelector(`#todo-form`);
 const todoInput = document.querySelector(`#todo-input`);
-
+function isDuplicateTask(newTitle, excludeIndex = -1) {
+    const isDuplicate = tasks.some(
+        (task, index) =>
+            task.title.toLowerCase() === newTitle.toLowerCase() &&
+            excludeIndex !== index
+    );
+    return isDuplicate;
+}
 function HandleTaskActions(e) {
     const taskItem = e.target.closest(`.task-item`);
     const taskIndex = +taskItem.getAttribute(`task-index`);
     const task = tasks[taskIndex];
+
     if (e.target.closest(`.edit`)) {
-        const newTitle = prompt("Enter your new work:", task.title);
+        let newTitle = prompt("Enter your new work:", task.title);
+        if (newTitle === null) return;
+
+        newTitle = newTitle.trim();
+        if (!newTitle) {
+            alert("Task title can not be emtpy");
+            return;
+        }
+
+        if (isDuplicateTask(newTitle, taskIndex)) {
+            alert("Task with this title already exist!");
+            return;
+        }
+
         task.title = newTitle;
         Render();
+        return;
     }
     if (e.target.closest(`.done`)) {
         task.completed = !task.completed;
@@ -26,6 +48,7 @@ function HandleTaskActions(e) {
         }
     }
 }
+
 function AddTask(e) {
     e.preventDefault();
 
@@ -33,16 +56,22 @@ function AddTask(e) {
     if (!value) {
         return alert(`No work to add`);
     }
+
+    if (isDuplicateTask(value)) {
+        return alert("Task with this title already exist!");
+    }
     tasks.push({
         title: value,
         completed: false,
     });
     Render();
-
     todoInput.value = ``;
 }
-
 function Render() {
+    if (!tasks.length) {
+        taskList.innerHTML = `<li class="empty-message">Nothing to do</li>`;
+        return;
+    }
     const html = tasks
         .map(
             (task, index) => `
