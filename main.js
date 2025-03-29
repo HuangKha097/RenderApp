@@ -1,10 +1,19 @@
-const tasks = [
-    // { title: "Name of work", completed: true },
-];
+// const tasks = [
+//     // { title: "Name of work", completed: true },
+// ];
+const tasks = JSON.parse(localStorage.getItem("tasks")) ?? [];
 
 const taskList = document.querySelector("#task-list");
 const todoForm = document.querySelector(`#todo-form`);
 const todoInput = document.querySelector(`#todo-input`);
+
+// Prevent XSS Attack
+function EscapeHTML(html) {
+    const div = document.createElement(`div`);
+    div.innerText = html;
+    return div.innerHTML;
+}
+
 function isDuplicateTask(newTitle, excludeIndex = -1) {
     const isDuplicate = tasks.some(
         (task, index) =>
@@ -13,9 +22,14 @@ function isDuplicateTask(newTitle, excludeIndex = -1) {
     );
     return isDuplicate;
 }
+
+function SaveTasks() {
+    localStorage.setItem(`tasks`, JSON.stringify(tasks));
+}
 function HandleTaskActions(e) {
     const taskItem = e.target.closest(`.task-item`);
-    const taskIndex = +taskItem.getAttribute(`task-index`);
+    if (!taskItem) return;
+    const taskIndex = +taskItem.getAttribute(`data-index`);
     const task = tasks[taskIndex];
 
     if (e.target.closest(`.edit`)) {
@@ -34,17 +48,20 @@ function HandleTaskActions(e) {
         }
 
         task.title = newTitle;
+        SaveTasks();
         Render();
         return;
     }
     if (e.target.closest(`.done`)) {
         task.completed = !task.completed;
         Render();
+        SaveTasks();
     }
     if (e.target.closest(`.delete`)) {
         if (confirm(`Delete ${task.title} ?`)) {
             tasks.splice(taskIndex, 1);
             Render();
+            SaveTasks();
         }
     }
 }
@@ -65,6 +82,7 @@ function AddTask(e) {
         completed: false,
     });
     Render();
+    SaveTasks();
     todoInput.value = ``;
 }
 function Render() {
@@ -77,8 +95,8 @@ function Render() {
             (task, index) => `
     <li class="task-item ${
         task.completed ? `completed` : ``
-    }" task-index="${index}">
-    <span class="task-title">${task.title}</span>
+    }" data-index="${index}">
+    <span class="task-title">${EscapeHTML(task.title)}</span>
     <div class="task-action">
         <button class="task-btn edit">Edit</button>
         <button class="task-btn done">${
